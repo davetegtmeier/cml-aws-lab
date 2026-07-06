@@ -1,26 +1,77 @@
 # Cisco CML Deployment for AWS
 
-## Description
+> **Current Layer:** Layer 1 – Terraform Foundation
 
-This repository to automate the creation and deployment of a Cisco Modeling lab instance in AWS.
+## Overview
 
-## Project Philosophy
+This repository is a learning project that documents the incremental design and deployment of Cisco Modeling Labs on AWS using Terraform. Rather than starting from a complete template, the project grows organically, introducing each artifact only when it solves a real problem.
 
-This project grows incrementally. Files and directories are added only when they solve a real problem or introduce a new capability. The goal is to understand why each artifact exists rather than starting from a large template.
+## Why This Repository Exists
 
-## Milestones
+This repository is not intended to be the fastest way to deploy Cisco Modeling Labs.
 
-1. [x] Repository created
-2. [ ] AWS account configured
-3. [ ] Terraform installed
-4. [ ] IAM user created
-5. [ ] SSH key pair created
-6. [ ] VPC working
-7. [ ] EC2 instance created
-8. [ ] CML installed
-9. [ ] License activated
-10. [ ] First topology running
-11. [ ] Instance can be stopped and restarted
-12. [ ] Automated deployment
-13. [ ] Automated destruction
+It is intended to be the best way for me to learn Terraform, AWS, and Infrastructure as Code by building one layer at a time.
 
+Every artifact is intentionally introduced only when it solves a real problem.
+
+The goal is not only to build a working environment, but to understand why every file, directory, and Terraform resource exists.
+
+## Design Philosophy
+
+This repository is intentionally built one layer at a time.
+
+Every file, directory, Terraform resource, and script must answer one question:
+
+> **Have we earned this yet?**
+
+Artifacts are introduced only when they solve a real problem. The objective is not only to build a working Cisco Modeling Labs deployment, but to understand why each component exists.
+
+## Current Status
+
+Current Layer: **Layer 1 – Terraform Foundation**
+
+Completed
+
+- Terraform initialized
+- AWS provider configured
+- Configuration validated
+
+Next Objective
+
+Teach Terraform how to query AWS without creating infrastructure.
+
+## Learning Roadmap
+
+### Layer 0 - Project Foundation
+- [x] Repository created
+- [x] Git configured
+- [x] Python virtual environment
+- [x] Terraform installed
+- [x] AWS CLI configured
+
+### Layer 1 - Terraform Foundation
+- [x] Initialize Terraform
+- [x] Configure AWS provider
+- [x] Validate configuration
+
+### Layer 2 - AWS Identity
+- [ ] Query current AWS account
+- [ ] Introduce data sources
+
+### Layer 3 - First Resource
+- [ ] Deploy EC2 instance
+- [ ] Destroy EC2 instance
+
+### Layer 4 - Networking
+
+## Repository Evolution
+
+| Layer | Objective | Status |
+|--------|-----------|--------|
+| 0 | Project Foundation | ✅ |
+| 1 | Terraform Foundation | ✅ |
+| 2 | AWS Identity | 🚧 |
+| 3 | First EC2 Instance | ⏳ |
+| 4 | Networking | ⏳ |
+| 5 | Cisco Modeling Labs | ⏳ |
+| 6 | Automation | ⏳ |

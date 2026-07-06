@@ -28,77 +28,64 @@ Create a clean project foundation for building Cisco Modeling Labs on AWS using 
 - Verified AWS CLI installation.
 - Verified AWS authentication using the `cml_terraform` IAM user.
 
-## Layer 1 - Terraform Foundation
+---
 
-### Goal
+# Layer 1 - Terraform Foundation
 
-Teach Terraform how to identify itself and communicate with AWS.
+## Why
 
-### Artifacts Earned
+Terraform cannot create infrastructure until it knows:
 
-#### versions.tf
+- Which Terraform version this project supports.
+- Which providers it needs.
+- Which inputs are available.
 
-Purpose:
+---
 
-- Define the required Terraform version.
-- Define the AWS provider and provider version.
+## Goal
 
-#### providers.tf
+Initialize Terraform and validate the configuration.
 
-Purpose:
+---
 
-- Configure the AWS provider.
-- Specify the deployment region.
+## Artifacts
 
-#### variables.tf
+### versions.tf
 
-Purpose:
+Terraform needs this file to know which Terraform and provider versions this project supports.
 
-- Define user-configurable input variables.
-- Introduce the concept of reusable configuration.
+### providers.tf
 
-#### .terraform.lock.hcl
+Terraform needs this file to know which cloud provider to communicate with.
 
-Purpose:
+### variables.tf
 
-- Lock provider versions for consistent deployments.
+Terraform needs this file so configuration values can be reused instead of hard-coded.
 
-Reason it was earned:
+### .terraform.lock.hcl
 
-- Generated automatically after the first successful `terraform init`.
+Terraform generated this file to ensure everyone uses the same provider versions.
 
-## Commands Executed
+---
 
-```bash
-terraform init
-terraform validate
-```
+## Validation
 
-## Results
+- `terraform init`
+- `terraform validate`
 
-- Terraform initialized successfully.
-- AWS provider downloaded successfully.
-- Configuration validated successfully.
+---
 
 ## Lessons Learned
 
-- Terraform operates on the current working directory.
-- `terraform init` downloads providers and prepares the working directory.
-- `terraform validate` checks configuration correctness before planning or applying changes.
-- Provider versions are recorded in `.terraform.lock.hcl` and should be committed.
-- The `.terraform` directory is local cache and should not be committed.
+- Terraform works from the current directory.
+- `terraform init` prepares the project.
+- `terraform validate` verifies configuration before planning.
+- `.terraform/` is local state and should not be committed.
+- `.terraform.lock.hcl` should be committed.
 
-## Questions
+---
 
-- Why do Terraform data sources exist?
-- When should `main.tf` be introduced?
-- When do outputs become useful?
-
-## Next Layer
-
-Teach Terraform how to query AWS without creating infrastructure.
-
-## If I had to teach this today...
+## 🎓 If I Had to Teach This Today...
 
 Terraform needs three things before it can do anything:
 
@@ -107,3 +94,13 @@ Terraform needs three things before it can do anything:
 3. Any input variables needed by that provider.
 
 Until those exist, Terraform doesn't know enough to build infrastructure.
+
+---
+
+## Ready for Next Layer?
+
+Yes.
+
+Terraform now knows what it is.
+
+Next, it needs to learn who it is talking to.
