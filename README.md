@@ -4,6 +4,10 @@
 
 This repository to automate the creation and deployment of a Cisco Modeling lab instance in AWS.
 
+## Project Philosophy
+
+This project grows incrementally. Files and directories are added only when they solve a real problem or introduce a new capability. The goal is to understand why each artifact exists rather than starting from a large template.
+
 ## Milestones
 
 1. [x] Repository created
