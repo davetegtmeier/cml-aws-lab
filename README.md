@@ -1,6 +1,6 @@
 # Cisco CML Deployment for AWS
 
-> **Current Layer:** Layer 1 – Terraform Foundation
+> **Current Layer:** Layer 3 – Networking
 
 ## Overview
 
@@ -55,14 +55,18 @@ Teach Terraform how to query AWS without creating infrastructure.
 - [x] Validate configuration
 
 ### Layer 2 - AWS Identity
-- [ ] Query current AWS account
-- [ ] Introduce data sources
+- [x] Query current AWS account
+- [x] Introduce data sources
 
-### Layer 3 - First Resource
+### Layer 3 - Networking
+- [ ] Define subnet
+- [ ] Design VPC
+
+### Layer 4 - First Resource
 - [ ] Deploy EC2 instance
 - [ ] Destroy EC2 instance
 
-### Layer 4 - Networking
+
 
 ## Repository Evolution
 
@@ -70,8 +74,8 @@ Teach Terraform how to query AWS without creating infrastructure.
 |--------|-----------|--------|
 | 0 | Project Foundation | ✅ |
 | 1 | Terraform Foundation | ✅ |
-| 2 | AWS Identity | 🚧 |
-| 3 | First EC2 Instance | ⏳ |
-| 4 | Networking | ⏳ |
+| 2 | AWS Identity | ✅ |
+| 3 | Networking | 🚧 |
+| 4 | First EC2 Instance | ⏳ |
 | 5 | Cisco Modeling Labs | ⏳ |
 | 6 | Automation | ⏳ |
