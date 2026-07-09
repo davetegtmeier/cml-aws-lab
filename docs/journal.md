@@ -160,3 +160,163 @@ Terraform building is more about defining the intent rather than performing each
 > I describe the relationships between resources, and Terraform determines the order in which they are created.
 
 When I started this layer, I thought Terraform executed commands. By the end of the layer, I understood that Terraform describes intent and relationships, while the provider performs the AWS API calls.
+
+# Layer 3 - Declaration
+
+## Why
+
+"We didn't come this far just to sightsee—we came to build something."
+
+Before Terraform can build infrastructure, we declare our intent by defining resources.
+
+---
+
+## Goal
+
+Build the foundational infrastructure for a reusable network automation lab.
+
+---
+
+## Artifacts 
+
+### terraform.tfstate
+
+Terraform code describes the desired state.
+
+The state file remembers the current managed state.
+
+    Terraform compares:
+    
+    Desired State (.tf files)
+    
+    ↓
+    
+    Terraform State (terraform.tfstate)
+    
+    ↓
+    
+    Actual Infrastructure (AWS)
+    
+    ↓
+    
+    Determine the minimum changes required
+
+to determine what changes are required.
+
+### design.md
+
+Captures the design as we go forward with the project.
+
+--- 
+
+## Updates
+
+### main.tf
+
+```
+resource "aws_vpc" "lab" {
+  cidr_block           = "10.224.0.0/16"
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
+  tags = {
+    Name        = "network-lab"
+    Project     = "network-automation-lab"
+    Environment = "lab"
+    ManagedBy   = "Terraform"
+  }
+}
+```
+
+--- 
+
+## Commands
+
+| Command              | Question it answers                            |
+| -------------------- | ---------------------------------------------- |
+| `terraform validate` | **Is my configuration internally consistent?** |
+| `terraform plan`     | **What is Terraform going to do?**             |
+| `terraform apply`    | **Go do it.**                                  |
+| `terraform destroy`  | **Remove everything Terraform created.**       |
+
+--- 
+
+## 🎓 If I Had to Teach This Today...
+Terraform is a language for describing infrastructure intent. Once I describe the desired state, Terraform determines the steps necessary to reconcile the infrastructure with that intent.
+
+1. **Terraform is declarative** - Terraform does not execute a list of commands.  It compares the desired configuration with the current infrastructure and determines the minimum changes required to make them match.
+2. **Relationships are everything** - Terraform builds a dependency graph from references.  Because of those relationships:
+   - Terraform determines execution order.
+   - Terraform knows when resources depend on one another.
+   - Removing a referenced object requires updating everything that depends on it.
+3. **Data discovers. Resources declare.**
+
+   | Purpose                                  | Syntax                    |
+   | ---------------------------------------- | ------------------------- |
+   | Discover existing infrastructure         | `data.aws_vpc.current.id` |
+   | Declare infrastructure Terraform manages | `aws_vpc.lab.id`          |
+
+4. **Terraform manages lifecycle.**
+    Desired State
+    
+    ↓
+    
+    Terraform State
+    
+    ↓
+    
+    Actual Infrastructure
+    
+    ↓
+    
+    Compare
+    
+    ↓
+    
+    Plan
+    
+    ↓
+    
+    Apply
+
+   - If all three agree: No changes
+   - If they differ, Terraform calculates the smallest set of changes required to reconcile them.
+
+## 💡 Biggest Insight Today
+
+- Terraform is not the goal.
+- Terraform is another engineering tool.
+- The concepts I'm learning—intent, relationships, desired state, and lifecycle management—apply far beyond AWS.
+- They apply to any system I may build in the future.
+
+I stopped thinking about Terraform as "creating infrastructure" and started thinking about it as "describing intent."
+
+- Terraform is another engineering tool in my toolbox.
+- The goal is not to become a Terraform expert.
+- The goal is to understand the concepts well enough that I can apply them to any engineering problem.
+
+## Engineering Workflow
+
+## Engineering Workflow
+
+When developing Terraform projects, follow the same disciplined workflow you would use for a production network change.
+
+Before committing code:
+
+- Format the Terraform configuration.
+- Validate the configuration.
+- Review the execution plan.
+- Verify the Git changes.
+- Commit and push.
+
+```bash
+terraform fmt
+terraform validate
+terraform plan
+git status
+git add .
+git commit -m "<message>"
+git push
+```
+
+> **Goal:** Every commit should contain Terraform code that is formatted, valid, and reviewed before it is committed.
