@@ -297,8 +297,6 @@ I stopped thinking about Terraform as "creating infrastructure" and started thin
 
 ## Engineering Workflow
 
-## Engineering Workflow
-
 When developing Terraform projects, follow the same disciplined workflow you would use for a production network change.
 
 Before committing code:
@@ -320,3 +318,124 @@ git push
 ```
 
 > **Goal:** Every commit should contain Terraform code that is formatted, valid, and reviewed before it is committed.
+
+# Layer 4 - Connectivity
+
+## Why
+
+"Let's make sure it is reachable"
+
+We need to make our VPC reachable to the outside world, so we will be able to connect to whatever is in there.
+
+---
+
+## Goal
+
+Complete the foundational network by creating the resources and relationships that allow workloads inside the VPC to communicate with the Internet.
+
+---
+
+## Artifacts 
+
+No new Terraform artifacts were introduced.
+
+This layer reinforced that Terraform projects grow by extending existing files with additional resources and relationships rather than creating new files for every feature.
+
+--- 
+
+## Updates
+
+### main.tf
+
+```
+resource "aws_subnet" "public" {
+  vpc_id            = aws_vpc.lab.id
+  cidr_block        = "10.224.1.0/24"
+  availability_zone = "us-east-1d"
+
+  tags = {
+    Name        = "network-lab-public-subnet"
+    Project     = "network-automation-lab"
+    Environment = "lab"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_internet_gateway" "public" {
+  vpc_id = aws_vpc.lab.id
+
+  tags = {
+    Name        = "network-lab-public-igw"
+    Project     = "network-automation-lab"
+    Environment = "lab"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.lab.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.public.id
+  }
+  tags = {
+    Name        = "network-lab-public-rt"
+    Project     = "network-automation-lab"
+    Environment = "lab"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+```
+
+--- 
+
+## 🎓 If I Had to Teach This Today...
+Today was a reinforcement of the lessions from yesterday, we create the subnet, internet gateway, route table and accosiated it to the subnet.  
+
+```
+VPC
+│
+├── Internet Gateway
+│
+├── Public Route Table
+│      │
+│      └── 0.0.0.0/0 → Internet Gateway
+│
+├── Public Subnet
+│      │
+│      └── Associated with Public Route Table
+│
+└── EC2 (future)
+       │
+       └── Lives in Public Subnet
+```
+
+- Use data when Terraform is reading infrastructure it does not manage. Use resource when Terraform creates and manages the infrastructure. Relationships are built by referencing those resources.
+
+  | Who owns it?          | Terraform Reference       |
+  | --------------------- | ------------------------- |
+  | Terraform             | `aws_vpc.lab.id`          |
+  | Already exists in AWS | `data.aws_vpc.current.id` |
+
+
+- I would also say that as an engineer you should define how you want things to look rather than letting Terraform decide. 
+- Tag things. Don't tag relationships.  We put tags on the subnet, route table, internet gateway, but did not tag the route_table_association since that was a relationship but not a thing.
+
+## 💡 Biggest Insight Today
+
+Infrastructure is made up of two things:
+
+- Objects (VPCs, Subnets, Route Tables, Internet Gateways)
+- Relationships (Associations and References)
+
+Terraform isn't just creating objects—it is describing how those objects relate to one another.
+
+Once the relationships are defined, Terraform automatically determines the order of operations.
+
+I stopped seeing AWS as a collection of icons in the console and started seeing it as a connected network that I designed.
