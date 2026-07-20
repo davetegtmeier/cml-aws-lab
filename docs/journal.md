@@ -439,3 +439,114 @@ Terraform isn't just creating objects—it is describing how those objects relat
 Once the relationships are defined, Terraform automatically determines the order of operations.
 
 I stopped seeing AWS as a collection of icons in the console and started seeing it as a connected network that I designed.
+
+# Layer 5 - Compute
+
+---
+
+## Why
+
+> "I have a network. How do I place a computer on it?"
+
+Now that our network infrastructure exists, we need to place a server into that network. An EC2 instance is simply a computer that lives inside our VPC.
+
+---
+
+## Goal
+
+Build an Amazon Linux EC2 instance and place it into our public subnet.
+
+> Note: This lesson focuses on compute and placement. Security Groups and access control will be added in the next layer.
+
+---
+
+## Artifacts 
+
+### Amazon Machine Image (AMI)
+
+Before an EC2 instance can be created, we must determine which operating system image it should boot from.
+
+Rather than hardcoding an AMI ID, we discover the latest Amazon-owned Amazon Linux 2023 image using a Terraform data source.
+
+We requested:
+
+- The most recent image
+- Published by Amazon
+- From the Amazon Linux 2023 family
+- Using the Hardware Virtual Machine (HVM) virtualization type
+
+Terraform then uses the returned AMI ID when creating the EC2 instance.
+
+### EC2 Instance
+
+For this lab we selected:
+
+- Instance type: t3.small
+- Public subnet
+- Automatically assign a public IPv4 address
+
+Security Groups will be added in the next layer.
+
+--- 
+
+## Updates
+
+### main.tf
+
+```
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+resource "aws_instance" "linux" {
+  ami                         = data.aws_ami.amazon_linux.id
+  instance_type               = "t3.small"
+  subnet_id                   = aws_subnet.public.id
+  associate_public_ip_address = true
+
+  # Security group relationship still to be added.
+}
+```
+
+--- 
+
+## 🎓 If I Had to Teach This Today...
+Today reinforced the difference between discovery and declaration.
+
+The EC2 instance is something Terraform will create, but the operating system image already exists. Rather than hardcoding an AMI ID, Terraform discovers the latest Amazon Linux image and then uses its ID when building the server.
+
+The important lesson wasn't memorizing the aws_ami data source.
+
+It was learning how to determine what information is required and then using the documentation to discover it.
+
+Documentation used:
+
+- Terraform Registry - AWS Provider - `aws_instance`
+- Terraform Registry - AWS Provider - `aws_ami` data source
+---
+
+## 💡 Biggest Insight Today
+
+Today I realized that I don't need to memorize Terraform syntax or every available argument.
+
+Instead, I should understand:
+
+- What engineering problem I'm solving
+- What relationships are required
+- Which Terraform resource represents that relationship
+- Where the documentation lives when I need the implementation details
+
+Terraform isn't asking me to memorize syntax.
+
+It's asking me to describe a system.
