@@ -61,3 +61,27 @@ resource "aws_route_table_association" "public" {
   subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public.id
 }
+
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-*-x86_64"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+resource "aws_instance" "linux" {
+  ami                         = data.aws_ami.amazon_linux.id
+  instance_type               = "t3.small"
+  subnet_id                   = aws_subnet.public.id
+  associate_public_ip_address = true
+
+  # Security group relationship still to be added.
+}
