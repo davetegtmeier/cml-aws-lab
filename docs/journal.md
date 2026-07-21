@@ -105,6 +105,8 @@ Terraform now knows what it is.
 
 Next, it needs to learn who it is talking to.
 
+---
+
 # Layer 2 - Discovery
 
 ## Why
@@ -160,6 +162,8 @@ Terraform building is more about defining the intent rather than performing each
 > I describe the relationships between resources, and Terraform determines the order in which they are created.
 
 When I started this layer, I thought Terraform executed commands. By the end of the layer, I understood that Terraform describes intent and relationships, while the provider performs the AWS API calls.
+
+---
 
 # Layer 3 - Declaration
 
@@ -319,6 +323,8 @@ git push
 
 > **Goal:** Every commit should contain Terraform code that is formatted, valid, and reviewed before it is committed.
 
+---
+
 # Layer 4 - Connectivity
 
 ## Why
@@ -427,6 +433,8 @@ VPC
 - I would also say that as an engineer you should define how you want things to look rather than letting Terraform decide. 
 - Tag things. Don't tag relationships.  We put tags on the subnet, route table, internet gateway, but did not tag the route_table_association since that was a relationship but not a thing.
 
+---
+
 ## 💡 Biggest Insight Today
 
 Infrastructure is made up of two things:
@@ -439,6 +447,8 @@ Terraform isn't just creating objects—it is describing how those objects relat
 Once the relationships are defined, Terraform automatically determines the order of operations.
 
 I stopped seeing AWS as a collection of icons in the console and started seeing it as a connected network that I designed.
+
+---
 
 # Layer 5 - Compute
 
@@ -534,6 +544,7 @@ Documentation used:
 
 - Terraform Registry - AWS Provider - `aws_instance`
 - Terraform Registry - AWS Provider - `aws_ami` data source
+
 ---
 
 ## 💡 Biggest Insight Today
@@ -550,3 +561,243 @@ Instead, I should understand:
 Terraform isn't asking me to memorize syntax.
 
 It's asking me to describe a system.
+
+---
+
+# Layer 6 – Security
+
+## Why
+
+> "I have a server on the Internet. Who is allowed to talk to it?"
+
+We created an EC2 instance, but by default there is no way to securely connect to it. We need to define a security policy that controls who is allowed to communicate with the server and how we will authenticate.
+
+---
+
+## Goal
+
+Create the security policy that allows secure SSH access to the EC2 instance while denying all unnecessary inbound traffic.
+
+---
+
+## Artifacts
+
+- Security Group
+- Ingress Rule
+- Egress Rule
+- AWS Key Pair
+- Targeted Destroy
+
+> Targeted destroy allows us to destroy only the EC2 instance while preserving the network infrastructure we have already built.
+
+---
+
+## Updates
+
+```hcl
+resource "aws_instance" "linux" {
+  key_name = aws_key_pair.djt.key_name
+
+  vpc_security_group_ids = [
+    aws_security_group.linux.id
+  ]
+
+  tags = {
+    Name        = "network-lab-linux"
+    Project     = "network-automation-lab"
+    Environment = "lab"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_security_group" "linux" {
+  name        = "network-lab-linux"
+  description = "Security group for the network lab Linux instance"
+  vpc_id      = aws_vpc.lab.id
+
+  tags = {
+    Name        = "network-lab-linux-sg"
+    Project     = "network-automation-lab"
+    Environment = "lab"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "linux_ssh" {
+  security_group_id = aws_security_group.linux.id
+  description       = "Allow SSH from DJT public IP"
+
+  cidr_ipv4 = "my public IP address"
+  from_port = 22
+  to_port   = 22
+  ip_protocol = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "allow_all_ipv4" {
+  security_group_id = aws_security_group.linux.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+
+  description = "Allow all outbound IPv4 traffic"
+}
+
+resource "aws_key_pair" "djt" {
+  key_name   = "network-lab-djt"
+  public_key = file(pathexpand("~/.ssh/id_ed25519.pub"))
+
+  tags = {
+    Name        = "network-lab-djt-key"
+    Project     = "network-automation-lab"
+    Environment = "lab"
+    ManagedBy   = "Terraform"
+  }
+}
+```
+
+---
+
+## 🎓 If I Had to Teach This Today...
+
+Creating an EC2 instance is only part of the solution. We also need to define **who is allowed to communicate with it** and **how they prove their identity**.
+
+The Security Group acts as a firewall attached to the EC2 instance. Individual ingress and egress rules define the traffic that is permitted.
+
+Our security policy is intentionally simple:
+
+- Allow SSH (TCP/22) **only** from my public IP address.
+- Allow all outbound IPv4 traffic so the server can reach the Internet for updates and package downloads.
+
+### Network Flow
+
+```text
+                 Internet
+                     │
+                     ▼
+           Internet Gateway
+                     │
+                     ▼
+              Public Route Table
+                     │
+                     ▼
+              Public Subnet
+                     │
+          ┌──────────┴──────────┐
+          ▼                     ▼
+     Security Group         Linux EC2
+          │
+          ▼
+     SSH from Home
+```
+
+### Dependency Graph
+
+```text
+                 VPC
+                  │
+     ┌────────────┴────────────┐
+     │                         │
+ Public Subnet          Security Group
+     │                         │
+     │              ┌──────────┴─────────┐
+     │              │                    │
+     │         SSH Rule           Egress Rule
+     │
+     └──────────────┐
+                    │
+                Linux EC2
+```
+
+### SSH Trust Relationship
+
+AWS stores the **public key** while the **private key remains on my Mac**.
+
+```text
+MacBook
+    │
+Private SSH Key
+    │
+SSH
+    │
+Public Key
+    │
+AWS Key Pair
+    │
+Linux EC2
+```
+
+Terraform does **not** manage the private key. It simply uploads the public key and associates it with the EC2 instance during creation.
+
+After applying these changes I was able to successfully SSH into the server using:
+
+```bash
+ssh ec2-user@<public-ip>
+```
+
+---
+
+## Targeted Destroy
+
+A normal destroy removes **every** resource managed by Terraform:
+
+```bash
+terraform destroy
+```
+
+For this lab I only want to remove the EC2 instance while preserving the VPC and networking infrastructure that we have already built.
+
+To accomplish this I can use a **targeted destroy**:
+
+```bash
+terraform plan -destroy -target=aws_instance.linux
+terraform destroy -target=aws_instance.linux
+```
+
+Terraform provides the following warning when using `-target`:
+
+> **Warning: Resource targeting is in effect**
+>
+> You are creating a plan with the `-target` option, which means that the result of this plan may not represent all of the changes requested by the current configuration.
+>
+> The `-target` option is not for routine use, and is provided only for exceptional situations such as recovering from errors or mistakes, or when Terraform specifically suggests using it as part of an error message.
+
+### My Takeaway
+
+Targeted destroy is an excellent learning and troubleshooting tool, but it intentionally leaves the deployed infrastructure different from the full Terraform configuration.
+
+After any targeted operation, I should always run:
+
+```bash
+terraform plan
+```
+
+Terraform will report that the EC2 instance is missing from the deployed infrastructure even though it is still defined in the Terraform configuration.
+
+Running:
+
+```bash
+terraform apply
+```
+
+will recreate only the Linux instance.
+
+While targeted operations are extremely useful for learning and recovery, they are **not** the normal Terraform workflow. The preferred workflow is to allow Terraform to evaluate the **entire dependency graph** so that the deployed infrastructure always matches the declared configuration.
+
+---
+
+## 💡 Biggest Insight Today
+
+A successful Terraform **plan** does not guarantee the cloud provider will accept every value.
+
+Terraform validates the configuration and builds an execution plan, but AWS is still the final authority. During `terraform apply`, AWS rejected my Security Group rule because the description contained an apostrophe (`'`), even though the Terraform configuration itself was valid.
+
+After correcting the description, Terraform did **not** recreate the resources that had already been created successfully. Instead, it created only the missing Security Group rule.
+
+This reinforced an important lesson:
+
+- `terraform validate` verifies the Terraform configuration.
+- `terraform plan` previews the intended changes.
+- `terraform apply` is where AWS performs its own service-specific validation.
+
+The provider API is always the final authority.
+
+--- 

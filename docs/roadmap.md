@@ -29,42 +29,12 @@ Throughout this project we will follow a few simple rules.
 - [x] Layer 2 - Discovery
 - [x] Layer 3 - Declaration
 - [x] Layer 4 - Connectivity
-- [x] Layer 5 - Compute (In Progress)
+- [x] Layer 5 - Compute
+- [x] Layer 6 - Security
 
 ---
 
 # Upcoming Layers
-
----
-
-# Layer 6 – Security
-
-## Engineering Problem
-
-> **How do I safely allow access to my server?**
-
-Now that the server exists, we need to decide who is allowed to communicate with it.
-
-### Concepts
-
-- Security Groups
-- Inbound Rules
-- Outbound Rules
-- Stateful Firewalls
-- SSH
-- ICMP
-
-### Relationships
-
-```
-VPC
-│
-├── Security Group
-│
-└── EC2
-      │
-      └── Uses Security Group
-```
 
 ---
 
@@ -176,6 +146,8 @@ CML simply becomes another application running on EC2.
 > **How do I understand a network before I automate it?**
 
 ForgeSpan begins with discovery—not configuration generation.
+
+> ForgeSpan's first responsibility is to understand the network. Its second responsibility is to help engineers make safe changes. Automation of execution comes only after the discovery and engineering models are trusted.
 
 ## Phase 1 – Discovery
 

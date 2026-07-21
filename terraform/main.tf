@@ -82,6 +82,60 @@ resource "aws_instance" "linux" {
   instance_type               = "t3.small"
   subnet_id                   = aws_subnet.public.id
   associate_public_ip_address = true
+  key_name                    = aws_key_pair.djt.key_name
 
-  # Security group relationship still to be added.
+  vpc_security_group_ids = [
+    aws_security_group.linux.id
+  ]
+
+  tags = {
+    Name        = "network-lab-linux"
+    Project     = "network-automation-lab"
+    Environment = "lab"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_security_group" "linux" {
+  name        = "network-lab-linux"
+  description = "Security group for the network lab Linux instance"
+  vpc_id      = aws_vpc.lab.id
+
+  tags = {
+    Name        = "network-lab-linux-sg"
+    Project     = "network-automation-lab"
+    Environment = "lab"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "linux_ssh" {
+  security_group_id = aws_security_group.linux.id
+  description       = "Allow SSH from DJT public IP"
+
+  cidr_ipv4   = "96.236.133.102/32"
+  from_port   = 22
+  to_port     = 22
+  ip_protocol = "tcp"
+}
+
+resource "aws_vpc_security_group_egress_rule" "allow_all_ipv4" {
+  security_group_id = aws_security_group.linux.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+
+  description = "Allow all outbound IPv4 traffic"
+}
+
+resource "aws_key_pair" "djt" {
+  key_name   = "network-lab-djt"
+  public_key = file(pathexpand("~/.ssh/id_ed25519.pub"))
+
+  tags = {
+    Name        = "network-lab-djt-key"
+    Project     = "network-automation-lab"
+    Environment = "lab"
+    ManagedBy   = "Terraform"
+  }
+
 }
