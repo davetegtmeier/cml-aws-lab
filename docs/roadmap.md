@@ -31,29 +31,11 @@ Throughout this project we will follow a few simple rules.
 - [x] Layer 4 - Connectivity
 - [x] Layer 5 - Compute
 - [x] Layer 6 - Security
+- [x] Layer 7 – Platform Requirements
 
 ---
 
 # Upcoming Layers
-
----
-
-# Layer 7 – Identity
-
-## Engineering Problem
-
-> **How does my server authenticate without storing credentials?**
-
-### Concepts
-
-- IAM
-- Roles
-- Instance Profiles
-- Temporary Credentials
-
-### Goal
-
-Understand why EC2 instances assume an IAM role instead of storing AWS keys.
 
 ---
 

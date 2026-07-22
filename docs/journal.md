@@ -12,8 +12,6 @@
 
 # Layer 0 - Project Foundation
 
-**Date:** 2026-07-06
-
 ## Goal
 
 Create a clean project foundation for building Cisco Modeling Labs on AWS using Terraform.
@@ -169,7 +167,7 @@ When I started this layer, I thought Terraform executed commands. By the end of 
 
 ## Why
 
-"We didn't come this far just to sightsee—we came to build something."
+> "We didn't come this far just to sightsee—we came to build something."
 
 Before Terraform can build infrastructure, we declare our intent by defining resources.
 
@@ -329,7 +327,7 @@ git push
 
 ## Why
 
-"Let's make sure it is reachable"
+> "Let's make sure it is reachable"
 
 We need to make our VPC reachable to the outside world, so we will be able to connect to whatever is in there.
 
@@ -801,3 +799,288 @@ This reinforced an important lesson:
 The provider API is always the final authority.
 
 --- 
+
+# Layer 7 – Platform Requirements
+
+## Why
+
+> "What does Cisco Modeling Labs need from the infrastructure we've built?"
+
+We now know how to create an EC2 instance, we now need to understand what CML requires to run.
+
+
+
+--- 
+
+## Goal
+
+```
+CML Version 1 Platform
+
+Instance family: m7i
+Instance size:   m7i.2xlarge
+vCPU:            8
+Memory:          32 GiB
+Virtualization:  Nested virtualization enabled
+Lifecycle:       Disposable and replaceable through Terraform
+```
+
+
+---
+
+## Artifacts 
+
+
+--- 
+
+## Updates
+
+```
+```
+
+
+--- 
+
+## 🎓 If I Had to Teach This Today...
+
+---
+
+## 💡 Biggest Insight Today
+
+One of the biggest breakthroughs today was realizing that AWS services are not entirely new concepts—they are cloud implementations of infrastructure I already understand.
+
+Thinking about the components in familiar terms made the architecture much easier to understand:
+
+AWS	Traditional Infrastructure
+EC2	Server
+EBS	Hard drive
+S3	Installation media / software repository
+IAM User	Administrator account
+IAM Role	Service account
+Security Group	Stateful firewall
+
+The analogy that clicked best for me was thinking of S3 as installation media (CD-ROM, DVD, or network software repository) and EBS as the server's hard drive.
+
+During deployment, the installation files are read from S3 and copied onto the EC2 instance's EBS volume. Once the software is installed, the application runs from EBS and no longer depends on S3 for normal operation.
+
+Understanding the purpose of each component is far more valuable than memorizing the AWS service names.
+
+> "Because CML runs KVM, which runs router VMs. KVM needs the processor's virtualization extensions, so the EC2 platform must expose nested virtualization."
+
+The reason wasn't that CML needed physical hardware. The reason was that AWS did not expose the CPU virtualization extensions (Intel VT-x/EPT) to most virtualized EC2 instances, so CML couldn't reliably run nested virtual machines. Cisco even called this out: the initial AWS tooling "needs a bare-metal flavor to support all node types" because AWS did not provide virtualization extensions on non-bare-metal instances at the time.
+
+> Processor must support VT-x and EPT.
+
+Because Cisco is running a VM inside of another VM and that is called **Nested Virtualization**:
+
+```
+AWS EC2
+    │
+Ubuntu / CML
+    │
+IOS-XE VM
+```
+
+So we must pick an AWS instance family that supports nested virtualization.
+
+```
+IOS-XE VM
+     │
+runs inside
+     │
+KVM
+     │
+runs inside
+     │
+Linux
+     │
+runs inside
+     │
+AWS EC2
+```
+
+> "CML doesn't actually need metal. It needs nested virtualization. Historically, bare metal was the way AWS provided that capability. Today, some Nitro virtual instances can provide it as well. The requirement is the virtualization extension—not the specific instance family."
+
+| Identity          | Needs to do what?     |
+| ----------------- | --------------------- |
+| David / Terraform | Create AWS resources  |
+| David / Terraform | Upload CML software   |
+| David / Terraform | Upload Refplat images |
+| EC2               | Read CML software     |
+| EC2               | Read Refplat images   |
+| EC2               | Run CML               |
+| CML               | Store labs on disk    |
+
+
+| Purpose            | Old Days        | AWS |
+| ------------------ | --------------- | --- |
+| Installation media | Floppy/CD/DVD   | S3  |
+| Hard drive         | IDE/SCSI/SAS    | EBS |
+| Computer           | Physical Server | EC2 |
+
+
+| AWS            | 1990s David                              |
+| -------------- | ---------------------------------------- |
+| EC2            | Physical server                          |
+| EBS            | SCSI hard drive                          |
+| S3             | Installation CD / Floppy                 |
+| Security Group | Firewall ACL                             |
+| IAM User       | Login account                            |
+| IAM Role       | Service account                          |
+| Terraform      | Build documentation that executes itself |
+
+---
+
+# Layer 7 – Platform Requirements
+
+## Why
+
+> "What does Cisco Modeling Labs need from the infrastructure we've built?"
+
+We now understand how to build the AWS infrastructure. The next step is to understand what Cisco Modeling Labs (CML) requires from that infrastructure so we can deploy a working lab environment.
+
+Rather than blindly following Cisco's deployment guide, we want to understand **why** each component exists and what engineering problem it solves.
+
+---
+
+## Goal
+
+```text
+CML Version 1 Platform
+
+Instance family: m7i
+Instance size:   m7i.2xlarge
+vCPU:            8
+Memory:          32 GiB
+Virtualization:  Nested virtualization enabled
+Lifecycle:       Disposable and replaceable through Terraform
+```
+
+---
+
+## Artifacts
+
+- Cisco cloud-cml deployment documentation
+- AWS Identity and Access Management (IAM)
+- S3 bucket (installation media)
+- EBS storage (persistent disk)
+- EC2 IAM Role
+- CML Reference Platform images
+- CML installation package
+
+---
+
+## Updates
+
+No Terraform changes were made today.
+
+Instead, the focus shifted from **building infrastructure** to **understanding the platform requirements** needed to deploy Cisco Modeling Labs.
+
+We also decided that the goal is no longer to learn every AWS service in isolation. Instead, we will learn each AWS service as it becomes necessary to complete the CML deployment.
+
+---
+
+## 🎓 If I Had to Teach This Today...
+
+One of the biggest lessons today was that AWS services are not entirely new technologies. They are cloud implementations of infrastructure concepts I have already worked with throughout my career.
+
+| AWS | Traditional Infrastructure |
+|------|----------------------------|
+| EC2 | Server |
+| EBS | Hard drive |
+| S3 | Installation media / software repository |
+| IAM User | Administrator account |
+| IAM Role | Service account |
+| Security Group | Stateful firewall |
+
+Thinking in terms of familiar infrastructure made the cloud architecture much easier to understand.
+
+### Installation Media vs Storage
+
+The analogy that clicked best was thinking of S3 as installation media.
+
+```
+             S3
+              │
+Copies installation files
+              │
+              ▼
+          EBS Volume
+              │
+        CML Installed
+              │
+              ▼
+          CML Runs
+```
+
+S3 is used to deliver the software.
+
+EBS is where the software is installed and where CML stores its configuration, labs, and data while running.
+
+---
+
+### Identity
+
+IAM also became much easier to understand once I stopped thinking about policies and started thinking about **identities**.
+
+Instead of asking:
+
+> "What permissions do I need?"
+
+The better question is:
+
+> "Who is trying to do something?"
+
+| Identity | Responsibility |
+|----------|----------------|
+| David / Terraform | Build AWS infrastructure |
+| David / Terraform | Upload CML software |
+| David / Terraform | Upload Reference Platform images |
+| EC2 | Download CML software |
+| EC2 | Download Reference Platform images |
+| EC2 | Run CML |
+| CML | Store labs and configurations on EBS |
+
+Permissions simply describe what each identity is allowed to do.
+
+---
+
+### Nested Virtualization
+
+One of the more difficult concepts today was nested virtualization.
+
+Cisco Modeling Labs runs virtual routers.
+
+Those routers are virtual machines managed by KVM.
+
+```
+AWS EC2
+    │
+Linux / CML
+    │
+KVM
+    │
+IOS-XE Virtual Machines
+```
+
+Historically, Cisco required bare-metal AWS instances because AWS only exposed CPU virtualization extensions (Intel VT-x / EPT) on bare-metal hardware.
+
+Today, some AWS Nitro instance families expose those same virtualization extensions without requiring bare metal.
+
+The important requirement is **nested virtualization**, not necessarily a bare-metal instance.
+
+---
+
+## 💡 Biggest Insight Today
+
+Today's biggest realization was that I don't have to become an AWS expert before deploying CML.
+
+I already understand servers, storage, networking, users, permissions, and firewalls.
+
+AWS simply provides cloud implementations of those same infrastructure building blocks.
+
+Rather than learning every AWS service independently, I can continue building the CML platform and learn each new service only when it becomes necessary.
+
+That keeps the project moving while still building a solid understanding of the underlying architecture.
+
+> **Messy and functional beats elegant and abandoned.**
