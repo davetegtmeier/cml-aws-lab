@@ -32,6 +32,7 @@ Throughout this project we will follow a few simple rules.
 - [x] Layer 5 - Compute
 - [x] Layer 6 - Security
 - [x] Layer 7 – Platform Requirements
+- [x] Layer 8 - Identity
 
 ---
 
@@ -39,7 +40,7 @@ Throughout this project we will follow a few simple rules.
 
 ---
 
-# Layer 8 – Persistent Storage
+# Layer 9 – Persistent State
 
 ## Engineering Problem
 
@@ -76,7 +77,7 @@ CML Images
 
 ---
 
-# Layer 9 – Cisco Modeling Labs
+# Layer 10 – Cisco Modeling Labs
 
 ## Engineering Problem
 
@@ -100,7 +101,7 @@ CML simply becomes another application running on EC2.
 
 ---
 
-# Layer 10 – Terraform Engineering
+# Layer 11 – Terraform Engineering
 
 ## Engineering Problem
 
@@ -121,7 +122,7 @@ CML simply becomes another application running on EC2.
 
 ---
 
-# Layer 11 – ForgeSpan
+# Layer 12 – ForgeSpan
 
 ## Engineering Problem
 

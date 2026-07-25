@@ -955,3 +955,292 @@ That keeps the project moving while still building a solid understanding of the 
 > **Messy and functional beats elegant and abandoned.**
 
 ---
+
+# Layer 8 – Identity
+
+## Why
+
+> "Once my infrastructure exists, how does it prove its identity to AWS?"
+
+Creating an EC2 instance is only part of the deployment. The running server still needs to interact with AWS services such as Amazon S3 and Systems Manager (SSM). Rather than embedding usernames, passwords, or API keys on the server, AWS provides the instance with its own identity.
+
+---
+
+## Goal
+
+Understand how AWS Identity and Access Management (IAM) allows both Terraform and a running EC2 instance to authenticate and perform only the tasks they are authorized to perform.
+
+---
+
+## Artifacts
+
+- IAM User
+- IAM Role
+- IAM Policies
+- Instance Profile
+- Principle of Least Privilege
+- IAM Trust Relationship
+
+---
+
+## Updates
+
+Discovered the existing IAM configuration created during my original CML deployment.
+
+```
+IAM User
+--------
+cml_terraform
+
+Permissions:
+- AmazonEC2FullAccess
+- cml-s3-access
+- pass-role
+
+Purpose:
+Build AWS infrastructure.
+```
+
+```
+IAM Role
+--------
+cml_controller
+
+Permissions:
+- AmazonSSMManagedInstanceCore
+- cml-s3-read
+
+Purpose:
+Operate the running CML server.
+```
+
+The EC2 instance receives its identity by attaching an Instance Profile, which contains the IAM Role.
+
+---
+
+## 🎓 If I Had to Teach This Today...
+
+When deploying infrastructure there are actually two separate identities involved.
+
+## Identity #1 - Terraform
+
+```
+IAM User
+
+cml_terraform
+```
+
+This identity represents **me** (or more accurately, Terraform acting on my behalf).
+
+Its responsibility is to build infrastructure.
+
+It requires permissions such as:
+
+- Create EC2 instances
+- Create VPCs
+- Create Security Groups
+- Create IAM Roles
+- Upload CML software to Amazon S3
+- Attach IAM Roles to EC2 instances (`iam:PassRole`)
+
+Once Terraform finishes creating the infrastructure, this identity is no longer involved.
+
+```
+David
+   │
+   ▼
+Terraform
+   │
+Creates AWS Infrastructure
+```
+
+---
+
+## Identity #2 - The EC2 Instance
+
+Once the EC2 instance has been created, Terraform exits.
+
+The server still needs to interact with AWS.
+
+For example, it needs to:
+
+- Download the Cisco Modeling Labs installation files
+- Download the Cisco reference platform images
+- Use AWS Systems Manager (SSM)
+
+The EC2 instance should **not** continue using my credentials.
+
+Instead, AWS gives the instance its own identity by attaching an IAM Role.
+
+```
+EC2 Instance
+      │
+Instance Profile
+      │
+IAM Role
+      │
+Policies
+```
+
+In this deployment the EC2 instance assumes the following role:
+
+```
+cml_controller
+```
+
+---
+
+### Why Two Identities?
+
+The two identities have completely different responsibilities.
+
+| Identity | Purpose |
+|----------|---------|
+| `cml_terraform` | Build AWS infrastructure |
+| `cml_controller` | Operate the running CML server |
+
+Terraform needs permission to create infrastructure.
+
+The running server only needs permission to perform its own job.
+
+This follows the **Principle of Least Privilege**:
+
+> Every identity should have only the permissions required to perform its function.
+
+---
+
+### What About the Instance Profile?
+
+One concept that initially confused me was the Instance Profile.
+
+Terraform does **not** attach an IAM Role directly to an EC2 instance.
+
+Instead, AWS attaches an **Instance Profile**, which contains the IAM Role.
+
+```
+EC2 Instance
+      │
+Instance Profile
+      │
+IAM Role
+      │
+Permissions
+```
+
+The Instance Profile acts as the bridge between the EC2 instance and its IAM Role.
+
+---
+
+### Trust Relationships
+
+Every IAM Role also contains a **Trust Relationship**.
+
+Rather than defining *what* the role is allowed to do, the Trust Relationship defines **who is allowed to assume the role**.
+
+For the `cml_controller` role:
+
+```
+Principal:
+    ec2.amazonaws.com
+
+Action:
+    sts:AssumeRole
+```
+
+This tells AWS:
+
+> Only EC2 instances are allowed to assume this role.
+
+Once assumed, the permissions attached to the role determine what the instance may access.
+
+---
+
+### The Complete Flow
+
+```
+                David
+                   │
+                   ▼
+         IAM User (cml_terraform)
+                   │
+          Creates Infrastructure
+                   │
+                   ▼
+              EC2 Instance
+                   │
+     Attach Instance Profile
+                   │
+                   ▼
+        IAM Role (cml_controller)
+                   │
+                   ▼
+           Read Objects from S3
+                   │
+                   ▼
+      Install and Run Cisco CML
+```
+
+Another way to visualize the relationship:
+
+```
+                     David
+                cml_terraform
+                      │
+                      │ Creates AWS infrastructure
+                      │ Uploads software
+                      │
+        +-------------+-------------+
+        |                           |
+        ▼                           ▼
+   EC2 Instance               Amazon S3
+        │
+        │ "Here is your identity"
+        ▼
+  Instance Profile
+        │
+        ▼
+     IAM Role
+        │
+        ▼
+   Read Objects from S3
+```
+
+---
+
+### Simple Mental Model
+
+```
+IAM User  = Builder
+
+IAM Role  = Running Workload
+```
+
+Users build infrastructure.
+
+Roles operate infrastructure.
+
+---
+
+## 💡 Biggest Insight Today
+
+Before today, IAM felt like a collection of AWS-specific security objects.
+
+The breakthrough came when I realized they solve the same problem we've always solved in traditional IT.
+
+A physical server should not use my administrator account to access network resources.
+
+Instead, it should have its own identity with only the permissions required to perform its job.
+
+AWS implements the same idea through IAM Roles.
+
+Once Terraform has finished creating the infrastructure, the EC2 instance needs its own identity to access AWS services such as Amazon S3 and Systems Manager (SSM).
+
+Rather than storing usernames, passwords, or API keys on the server, AWS allows the EC2 instance to **assume an IAM Role**, giving it temporary credentials with only the permissions it requires.
+
+The best way for me to think about it is:
+
+> Terraform builds the infrastructure.
+
+> The IAM Role operates the infrastructure.
+
+Understanding *why* two identities exist made the entire IAM model much easier to understand.
