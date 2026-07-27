@@ -36,3 +36,6 @@ build/
 
 # Misc
 *.swp
+
+# Secrets
+config.yml

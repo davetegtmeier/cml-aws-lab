@@ -33,47 +33,11 @@ Throughout this project we will follow a few simple rules.
 - [x] Layer 6 - Security
 - [x] Layer 7 – Platform Requirements
 - [x] Layer 8 - Identity
+- [x] Layer 9 – Persistent State
 
 ---
 
 # Upcoming Layers
-
----
-
-# Layer 9 – Persistent State
-
-## Engineering Problem
-
-> **How should my infrastructure persist data?**
-
-### Concepts
-
-- S3
-- Object Storage
-- IAM Permissions
-- CML Images
-
-### Desired Architecture
-
-```
-Terraform
-
-↓
-
-EC2
-
-↓
-
-IAM Role
-
-↓
-
-S3 Bucket
-
-↓
-
-CML Images
-```
 
 ---
 

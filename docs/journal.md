@@ -1244,3 +1244,146 @@ The best way for me to think about it is:
 > The IAM Role operates the infrastructure.
 
 Understanding *why* two identities exist made the entire IAM model much easier to understand.
+
+# Layer 9 - Persistent State
+
+## Why
+
+> "Infrastructure should be disposable. Data should not be."
+
+The goal is to make the EC2 instance temporary while preserving everything that has long-term value. If I destroy the server tomorrow, I should be able to rebuild it with a single `terraform apply` without losing software, images, or lab definitions.
+
+---
+
+## Goal
+
+- Design persistent storage for the network lab.
+- Create an S3 artifact repository managed by Terraform.
+- Store CML software and reference platform images outside of the EC2 instance.
+- Build the infrastructure required for a future CML controller.
+- Better understand how Terraform interacts with AWS IAM.
+
+---
+
+## Artifacts
+
+### S3 Artifact Repository
+
+```
+network-lab-artifacts-058264426456
+```
+
+Planned layout:
+
+```text
+s3://network-lab-artifacts-058264426456/
+
+├── cml/
+│   ├── software/
+│   │   └── 2.9.0/
+│   └── refplat/
+│       └── 2.9.0/
+│
+├── eve-ng/
+│   ├── software/
+│   └── images/
+│
+├── shared/
+│   └── qemu-images/
+│
+└── terraform-state/
+```
+
+### Terraform
+
+Created:
+
+- S3 Bucket
+- Versioning
+- Server-side Encryption
+- Public Access Block
+
+Updated IAM policies to allow Terraform to fully manage the bucket while preserving the original CML bucket configuration.
+
+Built the initial Terraform definition for the CML controller including:
+
+- Ubuntu 24.04
+- m8i.2xlarge
+- Nested Virtualization
+- 100 GB encrypted GP3 volume
+- HTTPS access
+- IAM Instance Profile
+
+Terraform now validates successfully and produces a clean execution plan.
+
+---
+
+## Updates
+
+```text
+✓ Designed persistent storage architecture
+
+✓ Created reusable S3 artifact repository
+
+✓ Uploaded:
+  - CML installation package
+  - Reference platform images
+
+✓ Enabled:
+  - Versioning
+  - Server-side encryption
+  - Public access blocking
+
+✓ Expanded IAM permissions instead of replacing the original policy
+
+✓ Learned how Terraform continuously reads AWS resources, requiring many GET/List permissions in addition to Create/Delete.
+
+✓ Built a Terraform definition for the future CML controller.
+
+Remaining:
+
+- Build cloud-init bootstrap process
+- Install CML automatically
+- Download artifacts from S3 during provisioning
+```
+
+---
+
+## 🎓 If I Had to Teach This Today...
+
+Terraform isn't simply a deployment tool.
+
+It is constantly comparing the desired infrastructure with the existing infrastructure.
+
+That means Terraform performs many read operations before making changes. Because of this, IAM policies require significantly more permissions than I originally expected. Every time Terraform attempted to inspect a bucket property, AWS required another `GetBucket...` permission.
+
+I also learned that dependencies flow in one direction.
+
+An EC2 instance depends on a Security Group.
+
+A Security Group does **not** depend on an EC2 instance.
+
+Removing the EC2 instance simply leaves the Security Group unused.
+
+Finally, I realized there is value in understanding the architecture before automating it. Cisco's Terraform project is extremely powerful, but I learned much more by rebuilding the infrastructure myself one layer at a time.
+
+---
+
+## 💡 Biggest Insight Today
+
+I originally wanted to "deploy Cisco Modeling Labs."
+
+By the end of the day, I realized my actual goal is much larger.
+
+I want to understand how cloud infrastructure is built—not simply reproduce someone else's Terraform.
+
+Today I intentionally stepped away from Cisco's deployment framework because I hadn't yet earned the abstractions it was using. Rebuilding the environment from first principles made the design significantly easier to understand.
+
+The infrastructure is now in place.
+
+Tomorrow's focus is no longer AWS networking or storage.
+
+Tomorrow is about teaching an EC2 instance how to become a Cisco Modeling Labs server.
+
+---
+
