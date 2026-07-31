@@ -34,14 +34,14 @@ Throughout this project we will follow a few simple rules.
 - [x] Layer 7 – Platform Requirements
 - [x] Layer 8 - Identity
 - [x] Layer 9 – Persistent State
-
+- [x] Layer 10 – Cisco Modeling Labs Installation
 ---
 
 # Upcoming Layers
 
 ---
 
-# Layer 10 – Cisco Modeling Labs
+# Layer 11 – Cisco Modeling Labs Installation
 
 ## Engineering Problem
 
@@ -86,86 +86,152 @@ CML simply becomes another application running on EC2.
 
 ---
 
-# Layer 12 – ForgeSpan
+# Layer 11 – First Boot
 
 ## Engineering Problem
 
-> **How do I understand a network before I automate it?**
+> **How do I automatically transform a blank Ubuntu server into a working Cisco Modeling Labs controller?**
 
-ForgeSpan begins with discovery—not configuration generation.
+By this point we have built the AWS infrastructure.
 
-> ForgeSpan's first responsibility is to understand the network. Its second responsibility is to help engineers make safe changes. Automation of execution comes only after the discovery and engineering models are trusted.
+Now we need to prove that our automation actually works.
 
-## Phase 1 – Discovery
+### Goals
 
-```
-Running Configurations
-
-↓
-
-Parser
-
-↓
-
-Relationships
-
-↓
-
-Source of Truth
-```
-
-Example:
-
-```
-configs/
-
-ALLEGHENY-CORE-01.txt
-
-ALLEGHENY-BORDER-01.txt
-
-HARPER-BORDER-01.txt
-```
+- Complete the installation script.
+- Launch the EC2 instance.
+- Observe cloud-init during first boot.
+- Verify CML services.
+- Import reference platform images.
+- Register the Smart License.
+- Successfully log into CML.
+- Document the complete deployment process.
 
 ---
 
-## Phase 2 – Validation
+# Layer 12 – Infrastructure Lifecycle
 
-```
-Expected
+## Engineering Problem
 
-↓
+> **How do I safely destroy and rebuild my lab without losing important data?**
 
-Actual
+Cloud infrastructure should be disposable.
 
-↓
+The goal is to preserve only what has long-term value while allowing everything else to be recreated from code.
 
-Report
-```
+### Goals
 
-Examples:
+- Understand ephemeral vs. persistent infrastructure.
+- Preserve artifacts in S3.
+- Gracefully deregister the Smart License.
+- Destroy and recreate the lab.
+- Verify a complete rebuild from Terraform.
+- Minimize AWS costs by destroying the lab when not in use.
 
-- Which Route Maps reference this Prefix List?
-- Which Prefix Lists are orphaned?
-- Which Route Maps reference nonexistent objects?
-- Which interface descriptions violate standards?
+> Infrastructure should be temporary.
+>
+> Data should be intentional.
 
 ---
 
-## Phase 3 – Generation
+# Layer 13 – Refactoring
 
-```
-Source of Truth
+## Engineering Problem
 
-↓
+> **How do I improve my code without changing what it does?**
 
-Jinja2
+Now that the lab works, improve readability and reduce duplication while preserving the existing behavior.
 
-↓
+### Topics
 
-Configuration
-```
+- Repeated tags
+- Local values
+- Common naming
+- Simplifying expressions
+- Organizing files
+- Improving comments
+- Consistent formatting
 
-Automation becomes the final step—not the first.
+> Make it work first.
+>
+> Then make it cleaner.
+
+---
+
+# Layer 14 – Terraform Engineering
+
+## Engineering Problem
+
+> **How do I make my Terraform configurable?**
+
+Only after understanding the infrastructure should we introduce configuration.
+
+### Topics
+
+- Variables
+- Outputs
+- tfvars
+- Dynamic values
+- Environment-specific configuration
+- Input validation
+
+> Configuration is not abstraction.
+>
+> It simply allows the same design to be reused with different values.
+
+---
+
+# Layer 15 – Terraform Modules
+
+## Engineering Problem
+
+> **When is a module actually worth creating?**
+
+Modules should remove duplication—not hide understanding.
+
+By this point we have enough repeated patterns to justify creating reusable building blocks.
+
+### Topics
+
+- Module design
+- Inputs and outputs
+- Reusable networking
+- Reusable EC2 deployment
+- Shared conventions
+- Versioning
+
+> Modules are earned after repetition becomes obvious.
+
+---
+
+# Layer 16 – Future Enhancements
+
+## Engineering Problem
+
+> **How can this lab evolve without requiring a redesign?**
+
+The core lab is complete.
+
+Now we can begin expanding it based on real needs rather than anticipated ones.
+
+### Possible Enhancements
+
+- EVE-NG deployment
+- Shared image repository
+- Elastic IP
+- Route 53 DNS
+- VPN access
+- Multiple AWS regions
+- Multiple lab environments
+- CI/CD deployment
+- GitHub Actions
+- Automated backups
+- Monitoring and alerting
+- Cost reporting
+
+> Solve today's problems today.
+>
+> Tomorrow's problems will reveal themselves when they're ready.
 
 ---
 

@@ -1267,13 +1267,111 @@ The goal is to make the EC2 instance temporary while preserving everything that 
 
 ## Artifacts
 
+In main.tf
+
+### CML Controller
+
+Defines the EC2 instance that will host Cisco Modeling Labs. The
+instance is configured for nested virtualization and serves as the
+foundation for the lab environment.
+
+```
+resource "aws_instance" "cml_controller" {
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = "m8i.2xlarge"
+  subnet_id                   = aws_subnet.public.id
+  associate_public_ip_address = true
+
+  key_name             = aws_key_pair.djt.key_name
+  iam_instance_profile = "cml_controller"
+  ebs_optimized        = true
+
+  vpc_security_group_ids = [
+    aws_security_group.linux.id
+  ]
+
+  cpu_options {
+    nested_virtualization = "enabled"
+  }
+
+  root_block_device {
+    volume_size = 100
+    volume_type = "gp3"
+    encrypted   = true
+  }
+
+  # We still need to supply Cisco's CML installation instructions here.
+  # user_data_base64 = ...
+
+  tags = {
+    Name        = "network-lab-cml-controller"
+    Project     = "network-automation-lab"
+    Environment = "lab"
+    ManagedBy   = "Terraform"
+  }
+}
+```
+
+### CML HTTPS Access
+
+```
+resource "aws_vpc_security_group_ingress_rule" "cml_controller_https" {
+  security_group_id = aws_security_group.linux.id
+  description       = "Allow HTTPS from DJT public IP"
+
+  cidr_ipv4   = "96.236.133.102/32"
+  from_port   = 443
+  to_port     = 443
+  ip_protocol = "tcp"
+}
+```
+
 ### S3 Artifact Repository
 
+Defines the persistent storage location for software packages,
+reference platform images, and future lab artifacts.
+
 ```
-network-lab-artifacts-058264426456
+resource "aws_s3_bucket" "network_lab_artifacts" {
+  bucket = "network-lab-artifacts-058264426456"
+
+  tags = {
+    Name        = "network-lab-artifacts"
+    Project     = "network-automation-lab"
+    Environment = "lab"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "network_lab_artifacts" {
+  bucket = aws_s3_bucket.network_lab_artifacts.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "network_lab_artifacts" {
+  bucket = aws_s3_bucket.network_lab_artifacts.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "network_lab_artifacts" {
+  bucket = aws_s3_bucket.network_lab_artifacts.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
 ```
 
-Planned layout:
+### S3 Bucket Planned Layout
 
 ```text
 s3://network-lab-artifacts-058264426456/
@@ -1387,3 +1485,309 @@ Tomorrow is about teaching an EC2 instance how to become a Cisco Modeling Labs s
 
 ---
 
+# Layer 10 – Cisco Modeling Labs Installation
+
+## Why
+
+> "Let's install the software we need."
+
+With the AWS infrastructure complete and persistent storage in place, the next step is to transform a blank Ubuntu EC2 instance into a Cisco Modeling Labs controller.
+
+Rather than blindly following Cisco's deployment framework, the goal of this layer is to understand the installation process well enough to build it ourselves. Cisco's DevNet project will serve as a reference implementation, but every piece we include should solve a problem we understand.
+
+---
+
+## Goal
+
+Build an installation process that automatically provisions Cisco Modeling Labs on a newly created EC2 instance.
+
+Objectives:
+
+- Study Cisco's deployment process and understand each step.
+- Build an installation script specific to this project.
+- Keep the implementation simple and readable.
+- Introduce abstractions only after they have been earned.
+
+Desired installation flow:
+
+1. Install prerequisites.
+2. Install the AWS CLI.
+3. Download the CML installation package from S3.
+4. Extract the package.
+5. Install the Debian packages.
+6. Generate the CML configuration.
+7. Configure networking.
+8. Run the initial setup.
+9. Clean up temporary files.
+
+> Copy behavior only after understanding why it exists.
+
+---
+
+## Artifacts
+
+### Planned Repository Structure
+
+```text
+templates/
+    cloud-init.yaml
+
+scripts/
+    install-cml.sh
+    install-refplats.sh
+    configure-license.sh
+```
+
+### Installation Flow
+
+```text
+Terraform
+        │
+        ▼
+AWS creates EC2
+        │
+        ▼
+Ubuntu boots
+        │
+        ▼
+cloud-init executes user_data
+        │
+        ▼
+install-cml.sh
+        │
+        ├── Install prerequisites
+        ├── Install AWS CLI
+        ├── Download CML package
+        ├── Extract package
+        ├── Install Debian packages
+        ├── Generate virl2-base-config.yml
+        ├── Run interface_fix.py
+        ├── Run CML initial setup
+        └── Clean up
+```
+
+---
+
+## What I Learned
+
+### Cisco's Deployment Framework
+
+Cisco's installer is built around cloud-init.
+
+```
+cloud-config.txt
+        │
+        ├── Writes files into /provision/
+        │
+        ├── cml.sh
+        ├── common.sh
+        ├── vars.sh
+        ├── license.py
+        ├── interface_fix.py
+        └── ...
+        │
+        ▼
+Executes /provision/cml.sh
+```
+
+Rather than reproducing Cisco's framework, I identified the pieces that solved real problems for my environment.
+
+---
+
+### Understanding copyfile()
+
+`copyfile()` is simply a wrapper around the cloud storage copy operation.
+
+For AWS it ultimately executes:
+
+```bash
+aws s3 cp ...
+```
+
+The function copies either individual files or directories from S3 into the EC2 instance.
+
+For this project I chose to eliminate the abstraction and call the AWS CLI directly since this deployment only targets AWS.
+
+---
+
+### Linux Concepts
+
+New Linux concepts learned during this layer:
+
+- `set -e` immediately stops a shell script if any command fails.
+- `/tmp` is a standard Linux temporary directory and already exists.
+- `mkdir -p` safely creates directories only when needed.
+- `tar` extracts an archive.
+- `apt-get update` refreshes Ubuntu's package catalog.
+- `apt-get install` installs packages from repositories or local `.deb` files.
+- `.deb` packages are Ubuntu's native installation packages.
+
+---
+
+### User Data
+
+One of the biggest concepts I learned was EC2 User Data.
+
+Terraform does **not** log into Ubuntu and execute commands.
+
+Instead, Terraform tells AWS:
+
+> "Create this virtual machine. When it boots for the first time, hand it this script."
+
+Ubuntu's cloud-init service executes that script automatically during first boot.
+
+```text
+terraform apply
+        │
+        ▼
+AWS API creates EC2
+        │
+        ▼
+Ubuntu boots
+        │
+        ▼
+cloud-init starts
+        │
+        ▼
+cloud-init executes user_data
+        │
+        ▼
+install-cml.sh
+        │
+        ▼
+Server becomes a CML controller
+```
+
+This also explained the Terraform configuration:
+
+```hcl
+user_data = file("${path.module}/scripts/install-cml.sh")
+```
+
+Terraform reads the shell script from disk and sends it to AWS as the instance's User Data.
+
+Because the script is plain text, `user_data` is sufficient.
+
+`user_data_base64` is only necessary when supplying already encoded content, as Cisco's deployment does.
+
+---
+
+### cloud-init
+
+Ubuntu automatically executes User Data as the root user.
+
+That means installation commands such as:
+
+```bash
+apt-get install
+mkdir -p /provision
+```
+
+do not require `sudo`.
+
+When troubleshooting, the primary log is:
+
+```text
+/var/log/cloud-init-output.log
+```
+
+Useful commands:
+
+```bash
+sudo tail -f /var/log/cloud-init-output.log
+
+cloud-init status
+
+cloud-init status --wait
+```
+
+---
+
+### Terraform Behavior
+
+Terraform identifies resources by their **resource address**, not by their attributes.
+
+Renaming a resource causes Terraform to destroy the existing resource and create a new one even if the resulting infrastructure is functionally identical.
+
+Watching Terraform correctly predict the destruction of the original security group rule and creation of four new rules (Home SSH, Camp SSH, Home HTTPS, Camp HTTPS) reinforced how Terraform compares configuration to state rather than simply modifying resources.
+
+---
+
+### Installation Phases
+
+At this point the project naturally separates into phases.
+
+```text
+Phase 1 - Infrastructure      ✅
+
+Terraform
+VPC
+Subnet
+Internet Gateway
+Route Table
+Security Group
+IAM
+S3
+EC2
+
+Phase 2 - Operating System    ✅
+
+Ubuntu
+cloud-init
+AWS CLI
+NetworkManager
+Docker Repository
+
+Phase 3 - CML Installation    ✅
+
+Download package
+Extract package
+Install packages
+Generate configuration
+interface_fix.py
+Initial setup
+
+Phase 4 - Lab Content         ⏳
+
+Reference platforms
+Images
+Import
+
+Phase 5 - Licensing           ⏳
+
+Register Smart License
+
+Phase 6 - Lifecycle           ⏳
+
+Graceful shutdown
+Deregister
+terraform destroy
+```
+
+---
+
+## 🎓 If I Had to Teach This Today...
+
+Terraform creates infrastructure.
+
+Cloud-init configures the operating system.
+
+My installation script installs and configures Cisco Modeling Labs.
+
+Each layer has a different responsibility.
+
+The biggest lesson from this layer was understanding how those responsibilities fit together to automatically transform a blank Ubuntu server into an application server.
+
+---
+
+## 💡 Biggest Insight Today
+
+This project stopped being about Terraform.
+
+Terraform simply creates the infrastructure.
+
+The real work happens after the operating system boots.
+
+Cloud-init, shell scripting, Linux package management, networking, and application configuration all work together to complete the deployment.
+
+Understanding those layers—and the responsibility of each one—is far more valuable than simply getting a server running.

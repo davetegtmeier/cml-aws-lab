@@ -140,8 +140,8 @@ resource "aws_instance" "cml_controller" {
     encrypted   = true
   }
 
-  # We still need to supply Cisco's CML installation instructions here.
-  # user_data_base64 = ...
+  user_data                   = file("${path.module}/scripts/install-cml.sh")
+  user_data_replace_on_change = true
 
   tags = {
     Name        = "network-lab-cml-controller"
@@ -164,9 +164,9 @@ resource "aws_security_group" "linux" {
   }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "cml_controller_https" {
+resource "aws_vpc_security_group_ingress_rule" "cml_controller_https_home" {
   security_group_id = aws_security_group.linux.id
-  description       = "Allow HTTPS from DJT public IP"
+  description       = "Allow HTTPS from home"
 
   cidr_ipv4   = "96.236.133.102/32"
   from_port   = 443
@@ -174,11 +174,31 @@ resource "aws_vpc_security_group_ingress_rule" "cml_controller_https" {
   ip_protocol = "tcp"
 }
 
-resource "aws_vpc_security_group_ingress_rule" "linux_ssh" {
+resource "aws_vpc_security_group_ingress_rule" "cml_controller_https_camp" {
   security_group_id = aws_security_group.linux.id
-  description       = "Allow SSH from DJT public IP"
+  description       = "Allow HTTPS from camp"
+
+  cidr_ipv4   = "172.59.26.145/32"
+  from_port   = 443
+  to_port     = 443
+  ip_protocol = "tcp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "linux_ssh_home" {
+  security_group_id = aws_security_group.linux.id
+  description       = "Allow SSH from home"
 
   cidr_ipv4   = "96.236.133.102/32"
+  from_port   = 22
+  to_port     = 22
+  ip_protocol = "tcp"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "linux_ssh_camp" {
+  security_group_id = aws_security_group.linux.id
+  description       = "Allow SSH from camp"
+
+  cidr_ipv4   = "172.59.26.145/32"
   from_port   = 22
   to_port     = 22
   ip_protocol = "tcp"
