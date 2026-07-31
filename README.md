@@ -1,131 +1,203 @@
 # CML AWS Lab
 
-Build and manage a Cisco Modeling Labs (CML) environment in AWS using Terraform while learning cloud infrastructure from first principles.
+Build, operate, and destroy a Cisco Modeling Labs (CML) environment in AWS while learning cloud engineering from first principles.
 
-This repository intentionally favors understanding over speed. Every layer is built only after understanding the engineering problem it solves.
-
-## Project Goals
-
-This repository began as a way to deploy Cisco Modeling Labs in AWS so that I could spin up a lab environment when needed and destroy it when I was finished to minimize cloud costs.
-
-As the project evolved, it became much more than a CML deployment. It is now my hands-on learning journey through AWS infrastructure, Infrastructure as Code (Terraform), and eventually network automation.
-
-The long-term goal is to use this environment as the foundation for larger automation projects, including ForgeSpan and network configuration automation.
+This repository intentionally favors **understanding over speed**. Every resource, script, and abstraction is introduced only after understanding the engineering problem it solves.
 
 ---
 
-## Learning Philosophy
+# Project Goals
 
-This repository is not intended to be the fastest way to deploy Cisco Modeling Labs.
+This project began with a simple objective:
 
-Rather than following tutorials that focus on syntax, this project is organized around understanding **why** each AWS component exists and how the infrastructure fits together.
+> Build a Cisco Modeling Labs server in AWS that can be created when needed and destroyed when finished to minimize cloud costs.
 
-Every layer answers a specific engineering question.
+As the project evolved, it became something much larger.
 
-| Layer | Engineering Question |
-|--------|----------------------|
-| VPC | Where does my network live? |
-| Subnet | Where do my devices live? |
-| Internet Gateway | How does traffic reach the Internet? |
-| Route Table | How are packets forwarded? |
-| EC2 | What workload am I running? |
-| Security | Who is allowed to communicate? |
-| SSH Keys | How is identity established? |
+Rather than simply deploying CML, this repository documents the complete engineering process of building cloud infrastructure, automating application deployment, and learning Infrastructure as Code one concept at a time.
 
-Every file, directory, Terraform resource, and script must answer one question:
+The end goal is not simply a working CML server.
 
-> **Have we earned this yet?**
+The end goal is understanding.
 
 ---
 
-## Current Progress
+# Learning Philosophy
 
-- ✅ Build custom VPC
-- ✅ Create public subnet
-- ✅ Deploy Internet Gateway
-- ✅ Configure Route Table
-- ✅ Associate Route Table with Subnet
-- ✅ Discover latest Amazon Linux AMI
-- ✅ Deploy Amazon Linux EC2 instance
-- ✅ Configure Security Group
-- ✅ Restrict SSH access to home IP
-- ✅ Authenticate using SSH key pair
-- ✅ Validate end-to-end connectivity
-- ✅ Practice targeted resource destruction
+There are many tutorials that show **what** to type.
+
+This repository attempts to answer **why**.
+
+Every layer begins with an engineering problem rather than a Terraform feature.
+
+Questions such as:
+
+- Where does my network live?
+- How does traffic reach the Internet?
+- What makes infrastructure persistent?
+- How does software install itself after an EC2 instance boots?
+- How should cloud infrastructure be destroyed safely?
+
+Only after understanding the problem do we implement the solution.
+
+One guiding principle has emerged throughout the project:
+
+> **Have I earned this yet?**
+
+Variables...
+
+Modules...
+
+Locals...
+
+Reusable abstractions...
+
+They are introduced only after repetition demonstrates why they are useful.
 
 ---
 
-## Current Architecture
+# Engineering Roadmap
+
+| Layer | Engineering Problem |
+|--------|---------------------|
+| 1 | Where does my network live? |
+| 2 | Where do my devices live? |
+| 3 | How does traffic reach the Internet? |
+| 4 | How are packets forwarded? |
+| 5 | What workload am I running? |
+| 6 | Who is allowed to communicate? |
+| 7 | How is identity established? |
+| 8 | How do I preserve data beyond the life of an EC2 instance? |
+| 9 | How do I automate infrastructure creation with Terraform? |
+| 10 | How do I automatically install Cisco Modeling Labs? |
+| 11 | How do I transform a blank Ubuntu server into a working CML controller? |
+| 12 | How do I safely destroy and rebuild cloud infrastructure? |
+| 13 | How do I improve code without changing its behavior? |
+| 14 | How do I make Terraform configurable? |
+| 15 | When is a Terraform module actually worth creating? |
+| 16 | How can this lab evolve without requiring a redesign? |
+
+---
+
+# Current Progress
+
+## Infrastructure
+
+- ✅ Custom VPC
+- ✅ Public Subnet
+- ✅ Internet Gateway
+- ✅ Route Table
+- ✅ Route Table Association
+- ✅ Security Groups
+- ✅ SSH Key Management
+- ✅ IAM Roles
+- ✅ Amazon S3 Artifact Repository
+- ✅ Ubuntu EC2 Controller
+- ✅ Nested Virtualization
+- ✅ Persistent Storage Design
+
+## Cisco Modeling Labs
+
+- ✅ Installation workflow designed
+- ✅ User Data bootstrap process
+- ✅ Automated installation script
+- ✅ Network configuration
+- ✅ Initial configuration generation
+
+## Remaining Work
+
+- ⏳ First deployment
+- ⏳ Reference platform installation
+- ⏳ Smart Licensing
+- ⏳ Lifecycle management
+- ⏳ Refactoring
+- ⏳ Variables
+- ⏳ Modules
+
+---
+
+# Repository Structure
 
 ```text
-                 MacBook
-                    │
-            Private SSH Key
-                    │
-                    ▼
-                 Internet
-                    │
-                    ▼
-           Internet Gateway
-                    │
-                    ▼
-             Public Route Table
-                    │
-                    ▼
-              Public Subnet
-                    │
-          ┌─────────┴─────────┐
-          ▼                   ▼
-     Security Group      Linux EC2
-                               ▲
-                               │
-                        AWS Key Pair
+terraform/
+    Infrastructure as Code
+
+scripts/
+    Installation and helper scripts
+
+templates/
+    cloud-init templates
+
+docs/
+    Engineering journal
+    Roadmap
+    Architecture diagrams
 ```
 
 ---
 
-## Roadmap
+# Engineering Journal
 
-### Infrastructure
+The `docs` directory is the heart of this project.
 
-- Build reusable AWS foundation
-- Deploy Cisco Modeling Labs
-- Add persistent storage
-- Reduce operating costs through lifecycle management
+Rather than documenting only the finished solution, it documents the learning process.
 
-### Automation
+Each layer records:
 
-- Build ForgeSpan network model
-- Discover network configurations
-- Build Source of Truth
-- Generate standardized network configurations
-- Introduce Ansible automation
-- Explore CI/CD workflows
-
----
-
-## Repository Structure
-
-```text
-terraform/   Infrastructure as Code
-docs/        Engineering journal and roadmap
-scripts/     Helper scripts and utilities
-```
-
----
-
-## Journal
-
-The `docs` directory contains a daily engineering journal documenting:
-
-- Why each component exists
+- Why the problem exists
 - Design decisions
 - Terraform resources
 - AWS relationships
-- Lessons learned
+- Linux concepts
 - Diagrams
-- Commit history
+- Lessons learned
+- Refactoring opportunities
 
-## Beyond This Repository
+The goal is to tell the story from:
 
-Once the AWS foundation is complete, this project will become the platform for building ForgeSpan, a fictional enterprise network used to explore discovery, source-of-truth, configuration generation, and network automation.
+> "Once upon a time, I couldn't spell Terraform or AWS..."
+
+to
+
+> "...I built a complete cloud lab that I understand from top to bottom."
+
+---
+
+# Design Principles
+
+Throughout this project I try to follow a few simple principles.
+
+- Build first.
+- Understand second.
+- Refactor third.
+- Generalize last.
+
+Infrastructure should be temporary.
+
+Data should be intentional.
+
+Abstractions are earned—not assumed.
+
+---
+
+# Version 1
+
+Version 1 is intentionally not perfect.
+
+It favors readability over elegance and understanding over optimization.
+
+Duplicate code will remain until there is enough repetition to justify refactoring.
+
+The history of the repository is part of the project.
+
+It documents not only what was built, but how I learned to build it.
+
+Future versions will introduce:
+
+- Locals
+- Variables
+- Modules
+- Refactoring
+- CI/CD
+
+only after Version 1 is complete.
