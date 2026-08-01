@@ -1791,3 +1791,130 @@ The real work happens after the operating system boots.
 Cloud-init, shell scripting, Linux package management, networking, and application configuration all work together to complete the deployment.
 
 Understanding those layers—and the responsibility of each one—is far more valuable than simply getting a server running.
+
+# Layer 11 – Preparing for First Boot
+
+## Why
+
+> "Infrastructure creates the server. User data transforms it into Cisco Modeling Labs."
+
+At this point the AWS infrastructure is complete. The remaining challenge is teaching a newly created Ubuntu server how to become a fully configured Cisco Modeling Labs controller automatically.
+
+---
+
+## Goal
+
+Prepare everything required so a brand new EC2 instance can bootstrap itself into a functioning CML server.
+
+Our objectives for this layer were to:
+
+- Complete the installation script.
+- Download the required software from Amazon S3.
+- Download the Cisco Reference Platform images.
+- Generate the initial CML configuration.
+- Prepare networking for CML.
+- Understand how EC2 user data executes during first boot.
+- Reach a point where the next `terraform apply` should produce a bootable CML controller.
+
+---
+
+## Artifacts
+
+### Shell Variables
+
+The installation script reached a point where repeated values began appearing throughout the code. Rather than duplicating them, I introduced a small set of shell variables to make future updates easier.
+
+```bash
+AWS_REGION="us-east-1"
+CML_VERSION="2.9.0"
+S3_BUCKET="network-lab-artifacts-058264426456"
+CML_PACKAGE="cml2_2.9.0-3_amd64-3.pkg"
+```
+
+These are the first variables introduced into the shell script because they solved an actual problem rather than being added preemptively.
+
+---
+
+## Updates
+
+- Completed the first version of `install-cml.sh`.
+- Organized the installer into logical phases:
+  - Setup Environment
+  - Download Provisioning Files
+  - Download Installation Package
+  - Download Reference Platforms
+  - Install Cisco Modeling Labs
+  - Generate Initial Configuration
+  - Configure Networking
+  - Run Initial Setup
+- Learned that EC2 User Data is executed by `cloud-init` during the first boot of a new instance.
+- Confirmed that `set -e` causes the shell script to terminate immediately when a command fails.
+- Verified the installation script syntax using:
+
+```bash
+bash -n scripts/install-cml.sh
+```
+
+- Discovered that only the Reference Platform YAML files had been copied into the new S3 bucket.
+- Compared the old and new S3 buckets and determined that the actual image files (`.qcow2`, `.img`, `.iol`, `.tar.gz`) had not been migrated.
+- Began copying the missing images into the new bucket before attempting the first deployment.
+- Confirmed that a standalone CML server performs two different roles:
+  - Controller
+  - Compute host
+
+Although `is_controller` and `is_compute` initially appeared contradictory, they actually describe separate responsibilities.
+
+---
+
+## 🎓 If I Had to Teach This Today...
+
+Terraform creates infrastructure.
+
+User Data customizes infrastructure.
+
+When Terraform creates an EC2 instance, AWS passes the User Data script to Ubuntu during the first boot. Ubuntu's `cloud-init` service executes the script as the root user, allowing the operating system to install software, create configuration files, configure networking, and prepare the server without manual intervention.
+
+The installation script itself follows a predictable lifecycle:
+
+1. Prepare the operating system.
+2. Install prerequisites.
+3. Download software from S3.
+4. Install Cisco Modeling Labs.
+5. Generate configuration files.
+6. Configure networking.
+7. Run CML's initial setup.
+8. Clean up temporary files.
+
+---
+
+## 💡 Biggest Insight Today
+
+I realized that my installer is no longer just a shell script.
+
+It has become an installer with defined phases and responsibilities.
+
+Instead of writing commands one after another, I began thinking about the lifecycle of a server:
+
+- Prepare
+- Download
+- Install
+- Configure
+- Initialize
+- Finish
+
+That shift made the script significantly easier to understand and maintain.
+
+---
+
+## Next Steps
+
+Before the first deployment I still need to:
+
+- Finish copying the Reference Platform images into Amazon S3.
+- Verify the image files exist in the new bucket.
+- Run a final Terraform validation and plan.
+- Execute `terraform apply`.
+- Observe the installation using `cloud-init`.
+- Troubleshoot any issues until the CML login page is available.
+
+For Version 1 I will perform Smart Licensing manually. Once the deployment process is stable, I will automate licensing and the complete destroy workflow in a later layer.

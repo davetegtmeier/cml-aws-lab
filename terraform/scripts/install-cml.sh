@@ -2,6 +2,11 @@
 
 set -e
 
+AWS_REGION="us-east-1"
+CML_VERSION="2.9.0"
+S3_BUCKET="network-lab-artifacts-058264426456"
+CML_PACKAGE="cml2_2.9.0-3_amd64-3.pkg"
+
 #################################################
 # Setup Environment
 #################################################
@@ -13,13 +18,15 @@ apt-get update
 echo "Installing prerequisite packages..."
 
 apt-get install -y \
+    ca-certificates \
     curl \
     unzip \
-    python3-yaml
+    python3-yaml \
+    openssl
 
 echo "Installing the AWS CLI..."
 
-export AWS_DEFAULT_REGION=us-east-1
+export AWS_DEFAULT_REGION="${AWS_REGION}"
 
 curl \
     "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" \
@@ -39,6 +46,19 @@ aws --version
 echo "Creating /provision staging directory..."
 
 mkdir -p /provision
+ls -ld /provision
+
+#################################################
+# Download Provisioning Files
+#################################################
+
+echo "Downloading CML network configuration helper..."
+
+aws s3 cp \
+    "s3://${S3_BUCKET}/cml/scripts/interface_fix.py" \
+    /provision/interface_fix.py
+
+chmod 755 /provision/interface_fix.py
 
 #################################################
 # Download CML Installation Package
@@ -47,8 +67,25 @@ mkdir -p /provision
 echo "Downloading CML installation package from S3..."
 
 aws s3 cp \
-    s3://network-lab-artifacts-058264426456/cml/software/2.9.0/cml2_2.9.0-3.pkg \
-    /provision/cml2_2.9.0-3.pkg
+    "s3://${S3_BUCKET}/cml/software/${CML_VERSION}/${CML_PACKAGE}" \
+    /provision/"${CML_PACKAGE}"
+
+#################################################
+# Download CML Reference Platforms
+#################################################
+
+echo "Creating CML reference platform image directory..."
+
+mkdir -p /var/lib/libvirt/images/virl-base-images
+
+echo "Downloading CML 2.9 reference platforms from S3..."
+
+aws s3 cp \
+    "s3://${S3_BUCKET}/cml/refplat/${CML_VERSION}/" \
+    /var/lib/libvirt/images/virl-base-images/ \
+    --recursive
+
+echo "CML reference platform files have been downloaded."
 
 #################################################
 # Install Cisco Modeling Labs
@@ -56,7 +93,7 @@ aws s3 cp \
 
 echo "Extracting Cisco Modeling Labs packages."
 
-tar xvf /provision/cml2_2.9.0-3.pkg \
+tar xvf /provision/"${CML_PACKAGE}" \
     --wildcards \
     -C /tmp \
     'cml2*_amd64.deb' \
@@ -69,8 +106,6 @@ echo "Enabling 32-bit package support."
 dpkg --add-architecture i386
 
 echo "Adding the Docker package repository."
-
-apt-get install -y ca-certificates curl
 
 install -m 0755 -d /etc/apt/keyrings
 

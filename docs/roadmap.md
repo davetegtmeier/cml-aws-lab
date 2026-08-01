@@ -35,58 +35,15 @@ Throughout this project we will follow a few simple rules.
 - [x] Layer 8 - Identity
 - [x] Layer 9 – Persistent State
 - [x] Layer 10 – Cisco Modeling Labs Installation
+- [x] Layer 11 – Preparing for First Boot
+
 ---
 
 # Upcoming Layers
 
 ---
 
-# Layer 11 – Cisco Modeling Labs Installation
-
-## Engineering Problem
-
-> **How do I create a reproducible network lab?**
-
-By this point we should already understand:
-
-- Networking
-- Compute
-- Security
-- Identity
-- Storage
-
-CML simply becomes another application running on EC2.
-
-### Goals
-
-- Deploy CML
-- Preserve images
-- Destroy and recreate the environment at will
-
----
-
-# Layer 11 – Terraform Engineering
-
-## Engineering Problem
-
-> **How do I make my Terraform reusable?**
-
-### Topics
-
-- Variables
-- Locals
-- Outputs
-- Modules
-- Remote State
-- Workspaces
-- Tag Reuse
-- Refactoring
-
-> Modules are earned after we've built enough infrastructure to recognize repetition.
-
----
-
-# Layer 11 – First Boot
+# Layer 12 – First Boot
 
 ## Engineering Problem
 
@@ -98,18 +55,18 @@ Now we need to prove that our automation actually works.
 
 ### Goals
 
-- Complete the installation script.
 - Launch the EC2 instance.
 - Observe cloud-init during first boot.
+- Troubleshoot installation issues.
 - Verify CML services.
-- Import reference platform images.
-- Register the Smart License.
-- Successfully log into CML.
-- Document the complete deployment process.
+- Verify reference platform installation.
+- Register the Smart License manually.
+- Successfully log into Cisco Modeling Labs.
+- Document the deployment process.
 
 ---
 
-# Layer 12 – Infrastructure Lifecycle
+# Layer 13 – Infrastructure Lifecycle
 
 ## Engineering Problem
 
@@ -127,6 +84,7 @@ The goal is to preserve only what has long-term value while allowing everything 
 - Destroy and recreate the lab.
 - Verify a complete rebuild from Terraform.
 - Minimize AWS costs by destroying the lab when not in use.
+- Understand Terraform state after create and destroy.
 
 > Infrastructure should be temporary.
 >
@@ -134,7 +92,7 @@ The goal is to preserve only what has long-term value while allowing everything 
 
 ---
 
-# Layer 13 – Refactoring
+# Layer 14 – Refactoring
 
 ## Engineering Problem
 
@@ -144,13 +102,14 @@ Now that the lab works, improve readability and reduce duplication while preserv
 
 ### Topics
 
-- Repeated tags
 - Local values
+- Common tags
 - Common naming
-- Simplifying expressions
-- Organizing files
-- Improving comments
-- Consistent formatting
+- Reduce duplication
+- Improve comments
+- Organize files
+- Standardize variables
+- Improve readability
 
 > Make it work first.
 >
@@ -158,22 +117,22 @@ Now that the lab works, improve readability and reduce duplication while preserv
 
 ---
 
-# Layer 14 – Terraform Engineering
+# Layer 15 – Configuration
 
 ## Engineering Problem
 
-> **How do I make my Terraform configurable?**
+> **How do I separate configuration from implementation?**
 
 Only after understanding the infrastructure should we introduce configuration.
 
 ### Topics
 
 - Variables
-- Outputs
 - tfvars
-- Dynamic values
-- Environment-specific configuration
+- Outputs
 - Input validation
+- Environment-specific values
+- Dynamic values
 
 > Configuration is not abstraction.
 >
@@ -181,7 +140,7 @@ Only after understanding the infrastructure should we introduce configuration.
 
 ---
 
-# Layer 15 – Terraform Modules
+# Layer 16 – Terraform Modules
 
 ## Engineering Problem
 
@@ -199,12 +158,13 @@ By this point we have enough repeated patterns to justify creating reusable buil
 - Reusable EC2 deployment
 - Shared conventions
 - Versioning
+- Module boundaries
 
 > Modules are earned after repetition becomes obvious.
 
 ---
 
-# Layer 16 – Future Enhancements
+# Layer 17 – Future Enhancements
 
 ## Engineering Problem
 
@@ -228,10 +188,27 @@ Now we can begin expanding it based on real needs rather than anticipated ones.
 - Automated backups
 - Monitoring and alerting
 - Cost reporting
+- GitHub Actions
+- CI/CD deployment
+- Automated testing
 
 > Solve today's problems today.
 >
 > Tomorrow's problems will reveal themselves when they're ready.
+
+# Layer 18 – Python Integration
+
+## Engineering Problem
+
+> How does Python complement Terraform?
+
+### Topics
+
+- Calling Terraform from Python
+- Reading Terraform outputs
+- Using boto3
+- Generating configuration
+- Automating operational tasks
 
 ---
 
